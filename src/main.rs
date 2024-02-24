@@ -5,18 +5,18 @@ use winit::{
     window::{Theme, WindowBuilder},
 };
 
-const VELOCITY: f32 = 0.01;
+const VELOCITY: f32 = 0.05;
 
 #[tokio::main]
 async fn main() {
     let event_loop = EventLoop::new().unwrap();
 
-    let w = WindowBuilder::new()
+    let window = WindowBuilder::new()
         .with_theme(Some(Theme::Dark))
         .build(&event_loop)
         .unwrap();
 
-    let mut state = State::new(w).await;
+    let mut state = State::new(window).await;
     let mut player = Player::new([0.0, 0.0], [0.2, 0.2]);
     let mut input = GameInput::default();
 
@@ -44,7 +44,7 @@ async fn main() {
                         },
                         WindowEvent::RedrawRequested => {
                             state.update();
-                            println!("Player: {:?}", player);
+                            println!("{:?}", player);
 
                             if input.up {
                                 player.position[1] += VELOCITY;

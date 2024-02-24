@@ -14,7 +14,7 @@ impl QuadBufferBuilder {
             player.position[0] - player.size[0] * 0.5,
             player.position[1] - player.size[1] * 0.5,
             player.position[0] + player.size[0] * 0.5,
-            player.position[0] + player.size[0] * 0.5,
+            player.position[1] + player.size[1] * 0.5,
         )
     }
 
