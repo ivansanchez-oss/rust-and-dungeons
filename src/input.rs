@@ -25,17 +25,17 @@ impl GameInput {
                 }
 
                 "s" => {
-                    self.left = value;
+                    self.down = value;
                     true
                 }
 
                 "a" => {
-                    self.right = value;
+                    self.left = value;
                     true
                 }
 
                 "d" => {
-                    self.down = value;
+                    self.right = value;
                     true
                 }
 

@@ -1,9 +1,11 @@
-use rust_and_dungeons::{input::GameInput, State};
+use rust_and_dungeons::{input::GameInput, Player, State};
 use winit::{
     event::{Event, KeyEvent, WindowEvent},
     event_loop::EventLoop,
     window::{Theme, WindowBuilder},
 };
+
+const VELOCITY: f32 = 0.01;
 
 #[tokio::main]
 async fn main() {
@@ -15,6 +17,7 @@ async fn main() {
         .unwrap();
 
     let mut state = State::new(w).await;
+    let mut player = Player::new([0.0, 0.0], [0.2, 0.2]);
     let mut input = GameInput::default();
 
     event_loop
@@ -34,12 +37,32 @@ async fn main() {
                                 logical_key: key,
                                 ..
                             } => {
-                                input.update(key, element_state);
+                                if input.update(key, element_state) {
+                                    state.window.request_redraw();
+                                }
                             }
                         },
                         WindowEvent::RedrawRequested => {
                             state.update();
-                            match state.render() {
+                            println!("Player: {:?}", player);
+
+                            if input.up {
+                                player.position[1] += VELOCITY;
+                            }
+
+                            if input.down {
+                                player.position[1] -= VELOCITY;
+                            }
+
+                            if input.right {
+                                player.position[0] += VELOCITY;
+                            }
+
+                            if input.left {
+                                player.position[0] -= VELOCITY;
+                            }
+
+                            match state.render(&player) {
                                 Ok(_) => {}
                                 // Reconfigure the surface if lost
                                 Err(wgpu::SurfaceError::Lost) => state.resize(state.size),

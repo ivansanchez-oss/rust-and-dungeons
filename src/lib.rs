@@ -160,7 +160,7 @@ impl State {
 
     pub fn update(&mut self) {}
 
-    pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
+    pub fn render(&mut self, player: &Player) -> Result<(), wgpu::SurfaceError> {
         let output = self.surface.get_current_texture()?;
         let view = output
             .texture
@@ -173,7 +173,7 @@ impl State {
             });
 
         let (vertex_buffer, index_buffer, indices) = QuadBufferBuilder::default()
-            .push_quad(-0.5, -0.5, 0.5, 0.5)
+            .push_player(player)
             .build(&self.device);
 
         encoder.copy_buffer_to_buffer(
@@ -245,5 +245,17 @@ impl Vertex {
                 },
             ],
         }
+    }
+}
+
+#[derive(Debug)]
+pub struct Player {
+    pub position: [f32; 2],
+    pub size: [f32; 2],
+}
+
+impl Player {
+    pub fn new(position: [f32; 2], size: [f32; 2]) -> Self {
+        Self { position, size }
     }
 }

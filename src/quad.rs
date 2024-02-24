@@ -1,4 +1,4 @@
-use crate::Vertex;
+use crate::{Player, Vertex};
 use wgpu::util::DeviceExt;
 
 #[derive(Default)]
@@ -9,23 +9,32 @@ pub struct QuadBufferBuilder {
 }
 
 impl QuadBufferBuilder {
+    pub fn push_player(self, player: &Player) -> Self {
+        self.push_quad(
+            player.position[0] - player.size[0] * 0.5,
+            player.position[1] - player.size[1] * 0.5,
+            player.position[0] + player.size[0] * 0.5,
+            player.position[0] + player.size[0] * 0.5,
+        )
+    }
+
     pub fn push_quad(mut self, min_x: f32, min_y: f32, max_x: f32, max_y: f32) -> Self {
         self.vertex_data.extend(&[
             Vertex {
                 position: [min_x, min_y, 0.0],
-                color: [0.0, 0.0, 1.0],
+                color: [1.0, 1.0, 1.0],
             },
             Vertex {
                 position: [max_x, min_y, 0.0],
-                color: [0.0, 0.0, 1.0],
+                color: [1.0, 1.0, 1.0],
             },
             Vertex {
                 position: [max_x, max_y, 0.0],
-                color: [0.0, 0.0, 1.0],
+                color: [1.0, 1.0, 1.0],
             },
             Vertex {
                 position: [min_x, max_y, 0.0],
-                color: [0.0, 0.0, 1.0],
+                color: [1.0, 1.0, 1.0],
             },
         ]);
 
