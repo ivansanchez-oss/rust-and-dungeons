@@ -1,8 +1,9 @@
+use quad::QuadBufferBuilder;
 use std::sync::Arc;
-use wgpu::util::DeviceExt;
 use winit::window::Window;
 
 pub mod input;
+pub mod quad;
 
 pub struct State {
     pub surface: wgpu::Surface<'static>,
@@ -12,8 +13,8 @@ pub struct State {
     pub size: winit::dpi::PhysicalSize<u32>,
     pub render_pipeline: wgpu::RenderPipeline,
     pub vertex_buffer: wgpu::Buffer,
+    pub index_buffer: wgpu::Buffer,
     pub window: Arc<Window>,
-    pub num_vertices: u32,
 }
 
 impl State {
@@ -21,7 +22,6 @@ impl State {
     pub async fn new(window: Window) -> Self {
         let window = Arc::new(window);
         let size = window.inner_size();
-        let num_vertices = VERTICES.len() as u32;
 
         let instance = wgpu::Instance::default();
 
@@ -118,10 +118,18 @@ impl State {
             multiview: None, // 5.
         });
 
-        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Vertex Buffer"),
-            contents: bytemuck::cast_slice(VERTICES),
-            usage: wgpu::BufferUsages::VERTEX,
+        let vertex_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: None,
+            size: Vertex::SIZE * 4 * 1,
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
+        let index_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: None,
+            size: std::mem::size_of::<u32>() as wgpu::BufferAddress * 6 * 1,
+            usage: wgpu::BufferUsages::INDEX | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
         });
 
         Self {
@@ -133,7 +141,7 @@ impl State {
             surface_config,
             size,
             render_pipeline,
-            num_vertices,
+            index_buffer,
         }
     }
 
@@ -164,6 +172,20 @@ impl State {
                 label: Some("Render Encoder"),
             });
 
+        let (vertex_buffer, index_buffer, indices) = QuadBufferBuilder::default()
+            .push_quad(-0.5, -0.5, 0.5, 0.5)
+            .build(&self.device);
+
+        encoder.copy_buffer_to_buffer(
+            &vertex_buffer,
+            0,
+            &self.vertex_buffer,
+            0,
+            vertex_buffer.size(),
+        );
+
+        encoder.copy_buffer_to_buffer(&index_buffer, 0, &self.index_buffer, 0, index_buffer.size());
+
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Render Pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -186,7 +208,8 @@ impl State {
 
         render_pass.set_pipeline(&self.render_pipeline); // 2.
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-        render_pass.draw(0..self.num_vertices, 0..1); // 3.
+        render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+        render_pass.draw_indexed(0..indices, 0, 0..1); // 3.
 
         drop(render_pass);
 
@@ -204,9 +227,10 @@ pub struct Vertex {
 }
 
 impl Vertex {
+    pub const SIZE: wgpu::BufferAddress = std::mem::size_of::<Self>() as wgpu::BufferAddress;
     pub fn desc() -> wgpu::VertexBufferLayout<'static> {
         wgpu::VertexBufferLayout {
-            array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
+            array_stride: Self::SIZE,
             step_mode: wgpu::VertexStepMode::Vertex,
             attributes: &[
                 wgpu::VertexAttribute {
@@ -223,18 +247,3 @@ impl Vertex {
         }
     }
 }
-
-const VERTICES: &[Vertex] = &[
-    Vertex {
-        position: [0.0, 0.5, 0.0],
-        color: [1.0, 0.0, 0.0],
-    },
-    Vertex {
-        position: [-0.5, -0.5, 0.0],
-        color: [0.0, 1.0, 0.0],
-    },
-    Vertex {
-        position: [0.5, -0.5, 0.0],
-        color: [0.0, 0.0, 1.0],
-    },
-];
