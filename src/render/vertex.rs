@@ -1,5 +1,34 @@
-use crate::{Player, Vertex};
+use crate::game::Player;
 use wgpu::util::DeviceExt;
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct Vertex {
+    position: [f32; 3],
+    color: [f32; 3],
+}
+
+impl Vertex {
+    pub const SIZE: wgpu::BufferAddress = std::mem::size_of::<Self>() as wgpu::BufferAddress;
+    pub fn desc() -> wgpu::VertexBufferLayout<'static> {
+        wgpu::VertexBufferLayout {
+            array_stride: Self::SIZE,
+            step_mode: wgpu::VertexStepMode::Vertex,
+            attributes: &[
+                wgpu::VertexAttribute {
+                    offset: 0,
+                    shader_location: 0,
+                    format: wgpu::VertexFormat::Float32x3,
+                },
+                wgpu::VertexAttribute {
+                    offset: std::mem::size_of::<[f32; 3]>() as wgpu::BufferAddress,
+                    shader_location: 1,
+                    format: wgpu::VertexFormat::Float32x3,
+                },
+            ],
+        }
+    }
+}
 
 #[derive(Default)]
 pub struct QuadBufferBuilder {
@@ -9,16 +38,16 @@ pub struct QuadBufferBuilder {
 }
 
 impl QuadBufferBuilder {
-    pub fn push_player(self, player: &Player) -> Self {
+    pub fn push_player(&mut self, player: &Player) {
         self.push_quad(
-            player.position[0] - player.size[0] * 0.5,
-            player.position[1] - player.size[1] * 0.5,
-            player.position[0] + player.size[0] * 0.5,
-            player.position[1] + player.size[1] * 0.5,
+            player.position()[0] - player.size()[0] * 0.5,
+            player.position()[1] - player.size()[1] * 0.5,
+            player.position()[0] + player.size()[0] * 0.5,
+            player.position()[1] + player.size()[1] * 0.5,
         )
     }
 
-    pub fn push_quad(mut self, min_x: f32, min_y: f32, max_x: f32, max_y: f32) -> Self {
+    pub fn push_quad(&mut self, min_x: f32, min_y: f32, max_x: f32, max_y: f32) {
         self.vertex_data.extend(&[
             Vertex {
                 position: [min_x, min_y, 0.0],
@@ -48,7 +77,6 @@ impl QuadBufferBuilder {
         ]);
 
         self.current += 1;
-        self
     }
 
     pub fn build(self, device: &wgpu::Device) -> (wgpu::Buffer, wgpu::Buffer, u32) {
